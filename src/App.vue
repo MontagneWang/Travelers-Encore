@@ -1,7 +1,7 @@
 <template>
   <div class="solar-system">
     <div class="sun">
-      <img src="../8.png" alt="Sun" />
+      <img src="/8.png" alt="Sun" />
     </div>
     <div v-for="planet in planets" :key="planet.id" :class="['planet', `planet-${planet.id}`, { paused: isPaused }]"
       :style="{ animationDuration: planet.orbitDuration + 's' }" @mouseover="pauseAnimation"
