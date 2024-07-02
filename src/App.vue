@@ -70,7 +70,8 @@ const changeVolume = () => {
 };
 
 onMounted(async () => {
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  // audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  audioContext = new (window.AudioContext)();
   gainNode = audioContext.createGain();
   gainNode.gain.value = volume.value;
   audioBuffer = await fetchAudio(audioSrc);
