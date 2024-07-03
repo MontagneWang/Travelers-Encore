@@ -2,7 +2,7 @@
   <div v-if="showMask" class="mask" @click="concert">{{ showText }}</div>
   <div class="solar-system">
     <div class="sun">
-      <img src="/8.png" alt="Sun" />
+      <img src="https://i0.hdslb.com/bfs/article/70514e9dee9c0954416e8893db540c961402305269.png@1e_1c.webp" alt="Sun" />
     </div>
     <div
       v-for="(planet, index) in planets"
@@ -114,13 +114,69 @@ onBeforeUnmount(() => {
 });
 
 const planets = ref([
-  { id: 1, image: "./1.png", outline: "./11.png", orbitDuration: 10 }, // 余烬双星
-  { id: 2, image: "./2.png", outline: "./22.png", orbitDuration: 20 }, // 废岩星
-  { id: 3, image: "./3.png", outline: "./33.png", orbitDuration: 30 }, // 碎空星
-  { id: 4, image: "./4.png", outline: "./44.png", orbitDuration: 10000000 }, // 外星站与太阳保持相对静止
-  { id: 5, image: "./5.png", outline: "./55.png", orbitDuration: 45 }, // 量子卫星应该绕指定的三颗行星旋转（之后切换网页显隐时移动到其他行星上）
-  { id: 6, image: "./6.png", outline: "./66.png", orbitDuration: 55 }, // 深巨星
-  { id: 7, image: "./7.png", outline: "./77.png", orbitDuration: 70 }, // 黑棘星
+  {
+    id: 1,
+    image:
+      "https://i0.hdslb.com/bfs/article/5070bf8512ce1c308fbf2bd832d919e51402305269.png@1e_1c.webp",
+    outline:
+      "https://i0.hdslb.com/bfs/article/3be14c053f206c2a12880db8503eb8d61402305269.png@1e_1c.webp",
+    orbitDuration: 10,
+  }, // 余烬双星
+  {
+    id: 2,
+    image:
+      "https://i0.hdslb.com/bfs/article/0efb6937678de02bdc1ba2132069bf541402305269.png@1e_1c.webp",
+    outline:
+      "https://i0.hdslb.com/bfs/article/9fe31d82efb736179f5336b45fc3b6591402305269.png@1e_1c.webp",
+    orbitDuration: 20,
+  }, // 废岩星
+  {
+    id: 3,
+    image:
+      "https://i0.hdslb.com/bfs/article/236623c6a6f527f620aa05fca381ae581402305269.png@1e_1c.webp",
+    outline:
+      "https://i0.hdslb.com/bfs/article/10d5133031b805e5b4aae44d3f58e8fb1402305269.png@1e_1c.webp",
+    orbitDuration: 30,
+  }, // 碎空星
+  {
+    id: 4,
+    image:
+      "https://i0.hdslb.com/bfs/article/0d0f8a1d1a599ac635d72c1a4d0ec5181402305269.png@1e_1c.webp",
+    outline:
+      "https://i0.hdslb.com/bfs/article/e4b078c28deb0120be29be9f024070a71402305269.png@1e_1c.webp",
+    orbitDuration: 10000000,
+  }, // 外星站与太阳保持相对静止
+  {
+    id: 5,
+    image:
+      "https://i0.hdslb.com/bfs/article/6fc016f64c490e3a3c478fb5e32b2cdf1402305269.png@1e_1c.webp",
+    outline:
+      "https://i0.hdslb.com/bfs/article/f8511547e065b28aef4e4c19b3bd36681402305269.png@1e_1c.webp",
+    orbitDuration: 45,
+  }, // 量子卫星应该绕指定的三颗行星旋转（之后切换网页显隐时移动到其他行星上）
+  {
+    id: 6,
+    image:
+      "https://i0.hdslb.com/bfs/article/1904c9a5e5f2d0fc7d60b49bb1b73d9d1402305269.png@1e_1c.webp",
+    outline:
+      "https://i0.hdslb.com/bfs/article/969599e2d5c70e1568fd7e6068c5d2e71402305269.png@1e_1c.webp",
+    orbitDuration: 55,
+  }, // 深巨星
+  {
+    id: 7,
+    image:
+      "https://i0.hdslb.com/bfs/article/fb3e5d5b42bbd74cf01da36a91d3f3e71402305269.png@1e_1c.webp",
+    outline:
+      "https://i0.hdslb.com/bfs/article/85340e698712cfaf3ccb620dd4f39d1c1402305269.png@1e_1c.webp",
+    orbitDuration: 70,
+  }, // 黑棘星
+  // { id: 1, image: "./1.png", outline: "./11.png", orbitDuration: 10 }, // 余烬双星
+  // { id: 2, image: "./2.png", outline: "./22.png", orbitDuration: 20 }, // 废岩星
+  // { id: 3, image: "./3.png", outline: "./33.png", orbitDuration: 30 }, // 碎空星
+  // { id: 4, image: "./4.png", outline: "./44.png", orbitDuration: 10000000 }, // 外星站与太阳保持相对静止
+  // { id: 5, image: "./5.png", outline: "./55.png", orbitDuration: 45 }, // 量子卫星应该绕指定的三颗行星旋转（之后切换网页显隐时移动到其他行星上）
+  // { id: 6, image: "./6.png", outline: "./66.png", orbitDuration: 55 }, // 深巨星
+  // { id: 7, image: "./7.png", outline: "./77.png", orbitDuration: 70 }, // 黑棘星
 ]);
 
 // 动画控制
@@ -179,7 +235,7 @@ $orbit-durations: (
   justify-content: center;
   align-items: center;
   // background: url("@/assets/bg.jpeg") no-repeat center / cover;
-  background: url("@/assets/bg.png") no-repeat center / cover;
+  background: url("@/assets/bg.webp") no-repeat center / cover;
 }
 
 .sun {
