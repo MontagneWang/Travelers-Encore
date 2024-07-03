@@ -1,5 +1,6 @@
 <template>
-  <div class="solar-system" @click.once="concert">
+  <div v-if="showMask" class="mask" @click="concert">{{ showText }}</div>
+  <div class="solar-system">
     <div class="sun">
       <img src="/8.png" alt="Sun" />
     </div>
@@ -36,9 +37,17 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from "vue";
 
+let showMask = ref(true);
+let loaded = ref(false);
+let showText = ref("Loading......");
+
 const concert = () => {
-  for (let index = 0; index < 7; index++) {
-    playAudio(index);
+  if (loaded.value) {
+    showMask.value = false;
+    for (let index = 0; index < 7; index++) {
+      playAudio(index);
+    }
+    loaded.value = false; // 禁止二次触发
   }
 };
 
@@ -125,10 +134,15 @@ const fetchAudio = async (track: Track, index: number) => {
   const response = await fetch(track.src);
   const arrayBuffer = await response.arrayBuffer();
   track.buffer = await audioContext.decodeAudioData(arrayBuffer);
+  if (index === 6) {
+    setTimeout(() => {
+      showText.value = "Click to Start";
+      loaded.value = true;
+    }, 0);
+  }
 };
 
 const playAudio = (index: number) => {
-  console.log(index);
   const track = playlist.value[index];
   if (track.buffer) {
     if (track.sourceNode) {
@@ -151,7 +165,6 @@ onMounted(() => {
   playlist.value.forEach((track, index) => {
     fetchAudio(track, index);
   });
-  // todo 添加 mask 全部加载完毕才可点击播放
 });
 
 onBeforeUnmount(() => {
@@ -179,6 +192,21 @@ const resumeAnimation = () => {
 </script>
 
 <style scoped lang="scss">
+.mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  color: white;
+  text-align: center;
+  line-height: 100vh;
+  font-size: 4vw;
+  user-select: none;
+  background-color: rgba(0, 0, 0, 0.75);
+  z-index: 2;
+}
+
 // 调整公转半径
 $planet-sizes: (
   1: 150px,
