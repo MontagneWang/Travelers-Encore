@@ -52,79 +52,20 @@ const concert = () => {
 };
 
 interface Track {
-  title: string;
   src: string;
   volume: number;
-  loop: boolean;
-  progress: number;
   buffer: AudioBuffer | null;
   sourceNode: AudioBufferSourceNode | null;
 }
 
 const playlist = ref<Track[]>([
-  {
-    title: "Track 1",
-    src: "/1.mp3",
-    volume: 0.5,
-    loop: true,
-    progress: 0,
-    buffer: null,
-    sourceNode: null,
-  },
-  {
-    title: "Track 2",
-    src: "/2.mp3",
-    volume: 0.5,
-    loop: true,
-    progress: 0,
-    buffer: null,
-    sourceNode: null,
-  },
-  {
-    title: "Track 3",
-    src: "/3.mp3",
-    volume: 0.5,
-    loop: true,
-    progress: 0,
-    buffer: null,
-    sourceNode: null,
-  },
-  {
-    title: "Track 4",
-    src: "/4.mp3",
-    volume: 0.5,
-    loop: true,
-    progress: 0,
-    buffer: null,
-    sourceNode: null,
-  },
-  {
-    title: "Track 5",
-    src: "/5.mp3",
-    volume: 0.5,
-    loop: true,
-    progress: 0,
-    buffer: null,
-    sourceNode: null,
-  },
-  {
-    title: "Track 6",
-    src: "/6.mp3",
-    volume: 0.5,
-    loop: true,
-    progress: 0,
-    buffer: null,
-    sourceNode: null,
-  },
-  {
-    title: "Track 7",
-    src: "/7.mp3",
-    volume: 0.5,
-    loop: true,
-    progress: 0,
-    buffer: null,
-    sourceNode: null,
-  },
+  { src: "/1.mp3", volume: 0.4, buffer: null, sourceNode: null }, // 余烬双星
+  { src: "/2.mp3", volume: 0.15, buffer: null, sourceNode: null }, // 废岩星
+  { src: "/3.mp3", volume: 0.5, buffer: null, sourceNode: null }, // 碎空星
+  { src: "/4.mp3", volume: 0.5, buffer: null, sourceNode: null }, // 外星站
+  { src: "/5.mp3", volume: 0.75, buffer: null, sourceNode: null }, // 量子卫星
+  { src: "/6.mp3", volume: 0.9, buffer: null, sourceNode: null }, // 深巨星
+  { src: "/7.mp3", volume: 0.4, buffer: null, sourceNode: null }, // 黑棘星
 ]);
 
 const audioContext = new window.AudioContext();
@@ -152,8 +93,9 @@ const playAudio = (index: number) => {
     track.sourceNode.buffer = track.buffer;
     track.sourceNode.connect(gainNodes[index]);
     gainNodes[index].connect(audioContext.destination);
-    track.sourceNode.loop = track.loop;
-    track.sourceNode.start(0, (track.progress / 100) * track.buffer.duration);
+    track.sourceNode.loop = true;
+    track.sourceNode.start(0);
+    gainNodes[index].gain.value = playlist.value[index].volume;
   }
 };
 
