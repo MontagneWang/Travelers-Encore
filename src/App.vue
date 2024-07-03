@@ -8,79 +8,136 @@
       @mouseleave="resumeAnimation">
       <img :src="planet.image" alt="Planet" />
 
+      <!-- todo 把下面的音乐播放器和上面的合并在一起 通过一个 v-for 实现 -->
+      <div v-for="(track, index) in playlist" :key="index" class="player">
+      <h2>{{ track.title }}</h2>
       <div class="controls">
-        <button @click="playAudio">播放</button>
-        <button @click="pauseAudio">暂停</button>
+        <button @click="playAudio(index)">播放</button>
+        <button @click="pauseAudio(index)">暂停</button>
 
         <label for="volume">音量:</label>
-        <input type="range" id="volume" min="0" max="1" step="0.01" v-model="volume" @input="changeVolume">
+        <input type="range" id="volume" min="0" max="1" step="0.01" v-model="track.volume" @input="changeVolume(index)">
 
         <label for="loop">循环播放:</label>
-        <input type="checkbox" id="loop" v-model="loop">
+        <input type="checkbox" id="loop" v-model="track.loop">
       </div>
+
+      <div class="progress-container">
+        <input type="range" min="0" max="100" step="0.01" v-model="track.progress" @input="seekAudio(index)">
+      </div>
+    </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, onBeforeUnmount } from 'vue';
 
-const audioSrc = './所莱内姆.flac'; // 替换为你的音频文件路径
-const volume = ref(0.5);
-const loop = ref(true); // 是否启用循环播放
+interface Track {
+  title: string;
+  src: string;
+  volume: number;
+  loop: boolean;
+  progress: number;
+  buffer: AudioBuffer | null;
+  sourceNode: AudioBufferSourceNode | null;
+}
 
-let audioContext: AudioContext | null = null;
-let audioBuffer: AudioBuffer | null = null;
-let sourceNode: AudioBufferSourceNode | null = null;
-let gainNode: GainNode | null = null;
+const playlist = ref<Track[]>([
+  { title: 'Track 1', src: '/1.flac', volume: 0.5, loop: true, progress: 0, buffer: null, sourceNode: null },
+  { title: 'Track 2', src: '/2.flac', volume: 0.5, loop: true, progress: 0, buffer: null, sourceNode: null },
+  { title: 'Track 3', src: '/3.flac', volume: 0.5, loop: true, progress: 0, buffer: null, sourceNode: null },
+  { title: 'Track 4', src: '/4.flac', volume: 0.5, loop: true, progress: 0, buffer: null, sourceNode: null },
+  { title: 'Track 5', src: '/5.flac', volume: 0.5, loop: true, progress: 0, buffer: null, sourceNode: null },
+  { title: 'Track 6', src: '/6.flac', volume: 0.5, loop: true, progress: 0, buffer: null, sourceNode: null },
+  { title: 'Track 7', src: '/7.flac', volume: 0.5, loop: true, progress: 0, buffer: null, sourceNode: null }
+]);
 
-const fetchAudio = async (url: string) => {
-  const response = await fetch(url);
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+const gainNodes = playlist.value.map(() => audioContext.createGain());
+
+const fetchAudio = async (track: Track, index: number) => {
+  const response = await fetch(track.src);
   const arrayBuffer = await response.arrayBuffer();
-  if (audioContext) {
-    return audioContext.decodeAudioData(arrayBuffer);
-  }
-  return null;
+  track.buffer = await audioContext.decodeAudioData(arrayBuffer);
 };
 
-const playAudio = () => {
-  if (audioContext && audioBuffer) {
-    if (sourceNode) {
-      sourceNode.stop();
+const playAudio = (index: number) => {
+  const track = playlist.value[index];
+  if (track.buffer) {
+    if (track.sourceNode) {
+      track.sourceNode.disconnect();
     }
-    sourceNode = audioContext.createBufferSource();
-    sourceNode.buffer = audioBuffer;
-    sourceNode.loop = loop.value;
-    sourceNode.connect(gainNode as GainNode).connect(audioContext.destination);
-    sourceNode.start(0);
+    track.sourceNode = audioContext.createBufferSource();
+    track.sourceNode.buffer = track.buffer;
+    track.sourceNode.connect(gainNodes[index]);
+    gainNodes[index].connect(audioContext.destination);
+    track.sourceNode.loop = track.loop;
+    track.sourceNode.start(0, (track.progress / 100) * track.buffer.duration);
   }
 };
 
-const pauseAudio = () => {
-  if (sourceNode) {
-    sourceNode.stop();
-    sourceNode = null;
+const pauseAudio = (index: number) => {
+  const track = playlist.value[index];
+  if (track.sourceNode) {
+    track.sourceNode.stop();
   }
 };
 
-const changeVolume = () => {
-  if (gainNode) {
-    gainNode.gain.value = volume.value;
+const changeVolume = (index: number) => {
+  gainNodes[index].gain.value = playlist.value[index].volume;
+};
+
+const updateProgress = (index: number) => {
+  const track = playlist.value[index];
+  if (track.sourceNode && track.buffer) {
+    const currentTime = audioContext.currentTime;
+    const startTime = parseFloat(track.sourceNode.start.toString());
+    track.progress = ((currentTime - startTime) / track.buffer.duration) * 100;
   }
 };
 
-onMounted(async () => {
-  // audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  audioContext = new (window.AudioContext)();
-  gainNode = audioContext.createGain();
-  gainNode.gain.value = volume.value;
-  audioBuffer = await fetchAudio(audioSrc);
+const seekAudio = (index: number) => {
+  const track = playlist.value[index];
+  if (track.buffer) {
+    const seekTime = (track.progress / 100) * track.buffer.duration;
+    if (track.sourceNode) {
+      track.sourceNode.stop();
+      track.sourceNode.disconnect();
+    }
+    track.sourceNode = audioContext.createBufferSource();
+    track.sourceNode.buffer = track.buffer;
+    track.sourceNode.connect(gainNodes[index]);
+    gainNodes[index].connect(audioContext.destination);
+    track.sourceNode.loop = track.loop;
+    track.sourceNode.start(0, seekTime);
+  }
+};
+
+const onTrackEnd = (index: number) => {
+  const track = playlist.value[index];
+  if (track.loop) {
+    playAudio(index);
+  } else {
+    track.progress = 0;
+  }
+};
+
+onMounted(() => {
+  playlist.value.forEach((track, index) => {
+    fetchAudio(track, index);
+  });
+
+  // 定时更新播放进度
+  setInterval(() => {
+    playlist.value.forEach((track, index) => {
+      updateProgress(index);
+    });
+  }, 1000);
 });
 
-watch(loop, (newLoopValue) => {
-  if (sourceNode) {
-    sourceNode.loop = newLoopValue;
-  }
+onBeforeUnmount(() => {
+  audioContext.close();
 });
 
 const planets = ref([
@@ -144,6 +201,7 @@ $orbit-durations: (
   img {
     width: 100%;
     height: 100%;
+    animation: rotate 25s linear infinite; // 添加自转动画
   }
 }
 
