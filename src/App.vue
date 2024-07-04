@@ -1,13 +1,15 @@
 <template>
-  <div v-show="isMasked" class="mask" @click="startEmsemble">
-    <transition name="fade" mode="out-in">
-      <div :key="showText">
-        <div class="loading" v-show="!isLoaded"></div>
-        <img class="ready" src="/click.png" v-show="isLoaded" alt="click" />
-        {{ showText }}
-      </div>
-    </transition>
-  </div>
+  <transition name="fade">
+    <div v-show="isMasked" class="mask" @click="startEmsemble">
+      <transition name="fade" mode="out-in">
+        <div :key="loadingText">
+          <div class="loading" v-show="!isLoaded"></div>
+          <img class="ready" src="/click.png" v-show="isLoaded" alt="click" />
+          {{ loadingText }}
+        </div>
+      </transition>
+    </div>
+  </transition>
   <div class="solar-system">
     <div class="sun">
       <img
@@ -58,7 +60,8 @@ import { ref, onMounted, onBeforeUnmount } from "vue";
 const isPaused = ref(false);
 const isMasked = ref(true);
 const isLoaded = ref(false);
-const showText = ref("Preparing Instruments......");
+const loadingText = ref("Preparing Instruments......");
+let localVolume: any = [];
 
 interface Planet {
   id: number;
@@ -159,12 +162,12 @@ const planetList = ref<Planet[]>([
 ]);
 
 const startEmsemble = () => {
-  if (isLoaded.value) {
+  // 两者都要确保，只确保 isLoaded 会导致 mask 存在时可快速点击多次产生重播问题
+  if (isLoaded.value && isMasked.value) {
     isMasked.value = false;
     for (let i = 0; i < planetList.value.length; i++) {
       playAudio(i);
     }
-    isLoaded.value = false; // 禁止二次触发
   }
 };
 
@@ -176,10 +179,9 @@ const fetchAudio = async (planet: Planet, i: number) => {
   const arrayBuffer = await response.arrayBuffer();
   planet.buffer = await audioContext.decodeAudioData(arrayBuffer);
 
-  // todo 兼容
   if (i === planetList.value.length - 1) {
     isLoaded.value = true;
-    showText.value = "Let's Play Together";
+    loadingText.value = "Let's Play Together";
   }
 };
 
@@ -201,28 +203,14 @@ const playAudio = (i: number) => {
 
 const changeVolume = (i: number) => {
   gainNodes[i].gain.value = planetList.value[i].volume;
-  // todo 写入 localStorage
-  localStorage.setItem(
-    "Planet",
-    JSON.stringify([
-      // fixme 写入的会有重复
-      ...JSON.parse(localStorage.getItem("Planet") || "[]"),
-      {
-        id: planetList.value[i].id,
-        volume: planetList.value[i].volume,
-      },
-    ])
-  );
+  localVolume[i] = Number(planetList.value[i].volume);
+  localStorage.setItem("Planet", JSON.stringify(localVolume));
 };
 
 onMounted(() => {
-  // todo 读取赋值
-  JSON.parse(localStorage.getItem("Planet") || "[]")?.forEach(
-    (item: { id: number; volume: number }) => {
-      planetList.value[item.id - 1].volume = item.volume;
-    }
-  );
+  localVolume = JSON.parse(localStorage.getItem("Planet") || "[]");
   planetList.value.forEach((planet: Planet, i: number) => {
+    planetList.value[i].volume = localVolume[i] ?? planetList.value[i].volume;
     fetchAudio(planet, i);
   });
 });
@@ -233,9 +221,13 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
+* {
+  user-select: none;
+}
+
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.75s;
+  transition: opacity 0.5s;
 }
 .fade-enter-from,
 .fade-leave-to {
@@ -260,7 +252,6 @@ onBeforeUnmount(() => {
     opacity: 0;
   }
 }
-// todo 加载
 .loading {
   display: inline-block;
   vertical-align: text-top;
