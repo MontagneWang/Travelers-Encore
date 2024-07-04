@@ -4,7 +4,12 @@
       <transition name="fade" mode="out-in">
         <div :key="loadingText">
           <div class="loading" v-show="!isLoaded"></div>
-          <img class="ready" src="/click.png" v-show="isLoaded" alt="click" />
+          <img
+            class="ready"
+            v-show="isLoaded"
+            alt="click"
+            src="data:image/png;base64,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"
+          />
           {{ loadingText }}
         </div>
       </transition>
@@ -17,13 +22,19 @@
         alt="Sun"
       />
     </div>
+    <!-- todo 单独暂停 -->
+    <!-- idea 应该给单独的 planet-id 添加 paused -->
     <div
       v-for="(planet, i) in planetList"
       :key="planet.id"
-      :class="['planet', `planet-${planet.id}`, { paused: isPaused }]"
+      :class="[
+        'planet',
+        `planet-${planet.id}`,
+        { paused: hoveredPlanet === planet.id },
+      ]"
       :style="{ animationDuration: planet.orbitDuration + 's' }"
-      @mouseover="isPaused = true"
-      @mouseleave="isPaused = false"
+      @mouseover="hoveredPlanet = planet.id"
+      @mouseleave="hoveredPlanet = null"
     >
       <img
         :src="planet.image"
@@ -31,7 +42,6 @@
         alt="Planet"
       />
       <img :src="planet.outline" alt="Planet-Outline" />
-
       <div class="controls">
         <input
           type="range"
@@ -57,11 +67,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from "vue";
 
-const isPaused = ref(false);
 const isMasked = ref(true);
 const isLoaded = ref(false);
+const hoveredPlanet = ref<null | number>(null);
 const loadingText = ref("Preparing Instruments......");
-let localVolume: any = [];
+let localVolume: number[] = [];
 
 interface Planet {
   id: number;
@@ -383,13 +393,13 @@ $orbit-durations: (
     transform: translate(-15%, 550%);
   }
 
-  // &.paused {
-  //   animation-play-state: paused !important;
+  &.paused {
+    animation-play-state: paused !important;
 
-  //   img {
-  //     animation-play-state: paused !important; // 确保自转动画也暂停
-  //   }
-  // }
+    img {
+      animation-play-state: paused !important; // 确保自转动画也暂停
+    }
+  }
 }
 
 @keyframes rotate {
@@ -407,12 +417,12 @@ $orbit-durations: (
     animation: orbit-#{$id} map-get($orbit-durations, $id) linear infinite;
 
     // todo 单独暂停
-    &.paused {
-      animation-play-state: paused !important;
-      img {
-        animation-play-state: paused !important;
-      }
-    }
+    // .paused {
+    //   animation-play-state: paused !important;
+    //   img {
+    //     animation-play-state: paused !important;
+    //   }
+    // }
   }
 
   @keyframes orbit-#{$id} {
