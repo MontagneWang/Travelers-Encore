@@ -22,8 +22,6 @@
         alt="Sun"
       />
     </div>
-    <!-- todo 单独暂停 -->
-    <!-- idea 应该给单独的 planet-id 添加 paused -->
     <div
       v-for="(planet, i) in planetList"
       :key="planet.id"
@@ -79,7 +77,7 @@ interface Planet {
   outline: string;
   orbitDuration: number;
   src: string;
-  volume: number;
+  volume: number; // todo 会被转换为 string，需要排查
   buffer: AudioBuffer | null;
   sourceNode: AudioBufferSourceNode | null;
 }
@@ -218,15 +216,63 @@ const changeVolume = (i: number) => {
 };
 
 onMounted(() => {
-  localVolume = JSON.parse(localStorage.getItem("Planet") || "[]");
+  // todo 想办法去除 "[0.4,0.15,0.5,0.5,0.7,0.9,0.5]"，同时防止 NaN 导致空值赋值运算符工作
+  localVolume = JSON.parse(
+    localStorage.getItem("Planet") || "[0.4,0.15,0.5,0.5,0.7,0.9,0.5]"
+  );
   planetList.value.forEach((planet: Planet, i: number) => {
-    planetList.value[i].volume = localVolume[i] ?? planetList.value[i].volume;
+    // 保证本地读取的音量在 0-1 之间，防止用户手动修改导致音量过大
+    planetList.value[i].volume =
+      Math.max(0, Math.min(1, localVolume[i])) ?? planetList.value[i].volume;
     fetchAudio(planet, i);
   });
 });
 
 onBeforeUnmount(() => {
   audioContext.close();
+});
+
+const handleKeydown = (event: KeyboardEvent) => {
+  switch (event.key) {
+    case " ":
+      // 空格键重置 localStorage
+      localStorage.clear();
+      break;
+    case "ArrowUp":
+      planetList.value.forEach((planet: Planet, i: number) => {
+        // 确保音量不会超出 1
+        planet.volume = Math.min(
+          parseFloat((Number(planet.volume) + 0.1).toFixed(2)),
+          1
+        );
+        changeVolume(i);
+      });
+      break;
+    case "ArrowDown":
+      planetList.value.forEach((planet: Planet, i: number) => {
+        // 确保音量不会跌出 0
+        planet.volume = Math.max(
+          parseFloat((Number(planet.volume) - 0.1).toFixed(2)),
+          0
+        );
+        changeVolume(i);
+      });
+      break;
+    case "ArrowLeft":
+      console.log("Left, 切换音质");
+      break;
+    case "ArrowRight":
+      console.log("Right, 切换音质");
+      break;
+  }
+};
+
+onMounted(() => {
+  window.addEventListener("keydown", handleKeydown);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleKeydown);
 });
 </script>
 
@@ -359,7 +405,6 @@ $orbit-durations: (
   display: flex;
   justify-content: center;
   align-items: center;
-  // background: url("@/assets/bg.jpeg") no-repeat center / cover;
   background: url("@/assets/bg.webp") no-repeat center / cover;
 }
 
@@ -415,14 +460,6 @@ $orbit-durations: (
 @each $id, $size in $planet-sizes {
   .planet-#{$id} {
     animation: orbit-#{$id} map-get($orbit-durations, $id) linear infinite;
-
-    // todo 单独暂停
-    // .paused {
-    //   animation-play-state: paused !important;
-    //   img {
-    //     animation-play-state: paused !important;
-    //   }
-    // }
   }
 
   @keyframes orbit-#{$id} {
