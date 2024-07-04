@@ -1,20 +1,31 @@
 <template>
-  <div v-if="showMask" class="mask" @click="concert">{{ showText }}</div>
+  <div v-show="isMasked" class="mask" @click="startEmsemble">
+    <transition name="fade" mode="out-in">
+      <div :key="showText">
+        <div class="loading" v-show="!isLoaded"></div>
+        <img class="ready" src="/click.png" v-show="isLoaded" alt="click" />
+        {{ showText }}
+      </div>
+    </transition>
+  </div>
   <div class="solar-system">
     <div class="sun">
-      <img src="https://i0.hdslb.com/bfs/article/70514e9dee9c0954416e8893db540c961402305269.png@1e_1c.webp" alt="Sun" />
+      <img
+        src="https://i0.hdslb.com/bfs/article/70514e9dee9c0954416e8893db540c961402305269.png@1e_1c.webp"
+        alt="Sun"
+      />
     </div>
     <div
-      v-for="(planet, index) in planets"
+      v-for="(planet, i) in planetList"
       :key="planet.id"
       :class="['planet', `planet-${planet.id}`, { paused: isPaused }]"
       :style="{ animationDuration: planet.orbitDuration + 's' }"
-      @mouseover="pauseAnimation"
-      @mouseleave="resumeAnimation"
+      @mouseover="isPaused = true"
+      @mouseleave="isPaused = false"
     >
       <img
         :src="planet.image"
-        :style="{ opacity: playlist[index].volume }"
+        :style="{ opacity: planet.volume }"
         alt="Planet"
       />
       <img :src="planet.outline" alt="Planet-Outline" />
@@ -26,10 +37,17 @@
           min="0"
           max="1"
           step="0.01"
-          v-model="playlist[index].volume"
-          @input="changeVolume(index)"
+          v-model="planet.volume"
+          @input="changeVolume(i)"
         />
       </div>
+
+      <!-- todo 每个单独的文本框, 悬停时显示 -->
+      <!-- <div class="text" v-show="isPaused">
+        <div class="loading" v-show="!isLoaded"></div>
+
+        <img src="" alt="" />
+      </div> -->
     </div>
   </div>
 </template>
@@ -37,83 +55,23 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from "vue";
 
-let showMask = ref(true);
-let loaded = ref(false);
-let showText = ref("Loading......");
+const isPaused = ref(false);
+const isMasked = ref(true);
+const isLoaded = ref(false);
+const showText = ref("Preparing Instruments......");
 
-const concert = () => {
-  if (loaded.value) {
-    showMask.value = false;
-    for (let index = 0; index < 7; index++) {
-      playAudio(index);
-    }
-    loaded.value = false; // 禁止二次触发
-  }
-};
-
-interface Track {
+interface Planet {
+  id: number;
+  image: string;
+  outline: string;
+  orbitDuration: number;
   src: string;
   volume: number;
   buffer: AudioBuffer | null;
   sourceNode: AudioBufferSourceNode | null;
 }
 
-const playlist = ref<Track[]>([
-  { src: "/1.mp3", volume: 0.4, buffer: null, sourceNode: null }, // 余烬双星
-  { src: "/2.mp3", volume: 0.15, buffer: null, sourceNode: null }, // 废岩星
-  { src: "/3.mp3", volume: 0.5, buffer: null, sourceNode: null }, // 碎空星
-  { src: "/4.mp3", volume: 0.5, buffer: null, sourceNode: null }, // 外星站
-  { src: "/5.mp3", volume: 0.75, buffer: null, sourceNode: null }, // 量子卫星
-  { src: "/6.mp3", volume: 0.9, buffer: null, sourceNode: null }, // 深巨星
-  { src: "/7.mp3", volume: 0.4, buffer: null, sourceNode: null }, // 黑棘星
-]);
-
-const audioContext = new window.AudioContext();
-const gainNodes = playlist.value.map(() => audioContext.createGain());
-
-const fetchAudio = async (track: Track, index: number) => {
-  const response = await fetch(track.src);
-  const arrayBuffer = await response.arrayBuffer();
-  track.buffer = await audioContext.decodeAudioData(arrayBuffer);
-  if (index === 6) {
-    setTimeout(() => {
-      showText.value = "Click to Start";
-      loaded.value = true;
-    }, 0);
-  }
-};
-
-const playAudio = (index: number) => {
-  const track = playlist.value[index];
-  if (track.buffer) {
-    if (track.sourceNode) {
-      track.sourceNode.disconnect();
-    }
-    track.sourceNode = audioContext.createBufferSource();
-    track.sourceNode.buffer = track.buffer;
-    track.sourceNode.connect(gainNodes[index]);
-    gainNodes[index].connect(audioContext.destination);
-    track.sourceNode.loop = true;
-    track.sourceNode.start(0);
-    gainNodes[index].gain.value = playlist.value[index].volume;
-  }
-};
-
-const changeVolume = (index: number) => {
-  gainNodes[index].gain.value = playlist.value[index].volume;
-};
-
-onMounted(() => {
-  playlist.value.forEach((track, index) => {
-    fetchAudio(track, index);
-  });
-});
-
-onBeforeUnmount(() => {
-  audioContext.close();
-});
-
-const planets = ref([
+const planetList = ref<Planet[]>([
   {
     id: 1,
     image:
@@ -121,7 +79,11 @@ const planets = ref([
     outline:
       "https://i0.hdslb.com/bfs/article/3be14c053f206c2a12880db8503eb8d61402305269.png@1e_1c.webp",
     orbitDuration: 10,
-  }, // 余烬双星
+    src: "/1.mp3",
+    volume: 0.4,
+    buffer: null,
+    sourceNode: null,
+  },
   {
     id: 2,
     image:
@@ -129,7 +91,11 @@ const planets = ref([
     outline:
       "https://i0.hdslb.com/bfs/article/9fe31d82efb736179f5336b45fc3b6591402305269.png@1e_1c.webp",
     orbitDuration: 20,
-  }, // 废岩星
+    src: "/2.mp3",
+    volume: 0.15,
+    buffer: null,
+    sourceNode: null,
+  },
   {
     id: 3,
     image:
@@ -137,7 +103,11 @@ const planets = ref([
     outline:
       "https://i0.hdslb.com/bfs/article/10d5133031b805e5b4aae44d3f58e8fb1402305269.png@1e_1c.webp",
     orbitDuration: 30,
-  }, // 碎空星
+    src: "/3.mp3",
+    volume: 0.5,
+    buffer: null,
+    sourceNode: null,
+  },
   {
     id: 4,
     image:
@@ -145,7 +115,11 @@ const planets = ref([
     outline:
       "https://i0.hdslb.com/bfs/article/e4b078c28deb0120be29be9f024070a71402305269.png@1e_1c.webp",
     orbitDuration: 10000000,
-  }, // 外星站与太阳保持相对静止
+    src: "/4.mp3",
+    volume: 0.5,
+    buffer: null,
+    sourceNode: null,
+  },
   {
     id: 5,
     image:
@@ -153,7 +127,11 @@ const planets = ref([
     outline:
       "https://i0.hdslb.com/bfs/article/f8511547e065b28aef4e4c19b3bd36681402305269.png@1e_1c.webp",
     orbitDuration: 45,
-  }, // 量子卫星应该绕指定的三颗行星旋转（之后切换网页显隐时移动到其他行星上）
+    src: "/5.mp3",
+    volume: 0.7,
+    buffer: null,
+    sourceNode: null,
+  },
   {
     id: 6,
     image:
@@ -161,7 +139,11 @@ const planets = ref([
     outline:
       "https://i0.hdslb.com/bfs/article/969599e2d5c70e1568fd7e6068c5d2e71402305269.png@1e_1c.webp",
     orbitDuration: 55,
-  }, // 深巨星
+    src: "/6.mp3",
+    volume: 0.9,
+    buffer: null,
+    sourceNode: null,
+  },
   {
     id: 7,
     image:
@@ -169,27 +151,169 @@ const planets = ref([
     outline:
       "https://i0.hdslb.com/bfs/article/85340e698712cfaf3ccb620dd4f39d1c1402305269.png@1e_1c.webp",
     orbitDuration: 70,
-  }, // 黑棘星
-  // { id: 1, image: "./1.png", outline: "./11.png", orbitDuration: 10 }, // 余烬双星
-  // { id: 2, image: "./2.png", outline: "./22.png", orbitDuration: 20 }, // 废岩星
-  // { id: 3, image: "./3.png", outline: "./33.png", orbitDuration: 30 }, // 碎空星
-  // { id: 4, image: "./4.png", outline: "./44.png", orbitDuration: 10000000 }, // 外星站与太阳保持相对静止
-  // { id: 5, image: "./5.png", outline: "./55.png", orbitDuration: 45 }, // 量子卫星应该绕指定的三颗行星旋转（之后切换网页显隐时移动到其他行星上）
-  // { id: 6, image: "./6.png", outline: "./66.png", orbitDuration: 55 }, // 深巨星
-  // { id: 7, image: "./7.png", outline: "./77.png", orbitDuration: 70 }, // 黑棘星
+    src: "/7.mp3",
+    volume: 0.5,
+    buffer: null,
+    sourceNode: null,
+  },
 ]);
 
-// 动画控制
-const isPaused = ref(false);
-const pauseAnimation = () => {
-  isPaused.value = true;
+const startEmsemble = () => {
+  if (isLoaded.value) {
+    isMasked.value = false;
+    for (let i = 0; i < planetList.value.length; i++) {
+      playAudio(i);
+    }
+    isLoaded.value = false; // 禁止二次触发
+  }
 };
-const resumeAnimation = () => {
-  isPaused.value = false;
+
+const audioContext = new window.AudioContext();
+const gainNodes = planetList.value.map(() => audioContext.createGain());
+
+const fetchAudio = async (planet: Planet, i: number) => {
+  const response = await fetch(planet.src);
+  const arrayBuffer = await response.arrayBuffer();
+  planet.buffer = await audioContext.decodeAudioData(arrayBuffer);
+
+  // todo 兼容
+  if (i === planetList.value.length - 1) {
+    isLoaded.value = true;
+    showText.value = "Let's Play Together";
+  }
 };
+
+const playAudio = (i: number) => {
+  const planet = planetList.value[i];
+  if (planet.buffer) {
+    if (planet.sourceNode) {
+      planet.sourceNode.disconnect();
+    }
+    planet.sourceNode = audioContext.createBufferSource();
+    planet.sourceNode.buffer = planet.buffer;
+    planet.sourceNode.connect(gainNodes[i]);
+    gainNodes[i].connect(audioContext.destination);
+    planet.sourceNode.loop = true;
+    changeVolume(i);
+    planet.sourceNode.start(0);
+  }
+};
+
+const changeVolume = (i: number) => {
+  gainNodes[i].gain.value = planetList.value[i].volume;
+  // todo 写入 localStorage
+  localStorage.setItem(
+    "Planet",
+    JSON.stringify([
+      // fixme 写入的会有重复
+      ...JSON.parse(localStorage.getItem("Planet") || "[]"),
+      {
+        id: planetList.value[i].id,
+        volume: planetList.value[i].volume,
+      },
+    ])
+  );
+};
+
+onMounted(() => {
+  // todo 读取赋值
+  JSON.parse(localStorage.getItem("Planet") || "[]")?.forEach(
+    (item: { id: number; volume: number }) => {
+      planetList.value[item.id - 1].volume = item.volume;
+    }
+  );
+  planetList.value.forEach((planet: Planet, i: number) => {
+    fetchAudio(planet, i);
+  });
+});
+
+onBeforeUnmount(() => {
+  audioContext.close();
+});
 </script>
 
 <style scoped lang="scss">
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.75s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.ready {
+  width: 4vw;
+  height: 4vw;
+  animation: 1.8s 1s infinite blink;
+  margin-top: 0.6vw;
+  vertical-align: text-top;
+
+  img {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+// todo 加载
+.loading {
+  display: inline-block;
+  vertical-align: text-top;
+  width: 6vw;
+  height: 6vw;
+  margin-right: 0.5vw;
+  margin-top: -0.3vw;
+  animation: rotate 4s infinite linear;
+  border: 0.2vw solid #fff;
+  border-radius: 100%;
+
+  // 卫星
+  &::before,
+  &::after {
+    content: "";
+    border-radius: 100%;
+    position: absolute;
+    left: 0.05vw;
+    top: 0.05vw;
+    width: 1.5vw;
+    height: 1.5vw;
+    background: radial-gradient(circle, #66ccff 20%, #fff);
+    box-shadow: 0 0 1vw #fff;
+  }
+
+  // 中心天体fff
+  &::after {
+    width: 3vw;
+    height: 3vw;
+    margin: 1.5vw;
+    background: radial-gradient(circle, #fff700 20%, #ee0000);
+    box-shadow: 0 0 2vw #ee0000;
+  }
+}
+
+// todo 文本框样式
+.text {
+  width: 300px;
+  height: 100px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 10px;
+  position: relative;
+
+  &:before {
+    content: "";
+    position: absolute;
+    top: 20px;
+    left: -20px;
+    border: 10px solid transparent;
+    border-right: 10px solid rgba(0, 0, 0, 0.7);
+  }
+}
+
 .mask {
   position: fixed;
   top: 0;
@@ -268,13 +392,13 @@ $orbit-durations: (
     transform: translate(-15%, 550%);
   }
 
-  &.paused {
-    animation-play-state: paused !important;
+  // &.paused {
+  //   animation-play-state: paused !important;
 
-    img {
-      animation-play-state: paused !important; // 确保自转动画也暂停
-    }
-  }
+  //   img {
+  //     animation-play-state: paused !important; // 确保自转动画也暂停
+  //   }
+  // }
 }
 
 @keyframes rotate {
@@ -290,6 +414,14 @@ $orbit-durations: (
 @each $id, $size in $planet-sizes {
   .planet-#{$id} {
     animation: orbit-#{$id} map-get($orbit-durations, $id) linear infinite;
+
+    // todo 单独暂停
+    &.paused {
+      animation-play-state: paused !important;
+      img {
+        animation-play-state: paused !important;
+      }
+    }
   }
 
   @keyframes orbit-#{$id} {
