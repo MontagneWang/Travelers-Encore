@@ -30,7 +30,6 @@
         `planet-${planet.id}`,
         { paused: hoveredPlanet === planet.id },
       ]"
-      :style="{ animationDuration: planet.orbitDuration + 's' }"
       @mouseover="hoveredPlanet = planet.id"
       @mouseleave="hoveredPlanet = null"
     >
@@ -75,7 +74,6 @@ interface Planet {
   id: number;
   image: string;
   outline: string;
-  orbitDuration: number;
   src: string;
   volume: number; // todo 会被转换为 string，需要排查
   buffer: AudioBuffer | null;
@@ -89,84 +87,77 @@ const planetList = ref<Planet[]>([
       "https://i0.hdslb.com/bfs/article/5070bf8512ce1c308fbf2bd832d919e51402305269.png@1e_1c.webp",
     outline:
       "https://i0.hdslb.com/bfs/article/3be14c053f206c2a12880db8503eb8d61402305269.png@1e_1c.webp",
-    orbitDuration: 10,
     src: "/1.mp3",
     volume: 0.35,
     buffer: null,
     sourceNode: null,
-  },
+  }, // 余烬双星
   {
     id: 2,
     image:
       "https://i0.hdslb.com/bfs/article/0efb6937678de02bdc1ba2132069bf541402305269.png@1e_1c.webp",
     outline:
       "https://i0.hdslb.com/bfs/article/9fe31d82efb736179f5336b45fc3b6591402305269.png@1e_1c.webp",
-    orbitDuration: 20,
     src: "/2.mp3",
     volume: 0.1,
     buffer: null,
     sourceNode: null,
-  },
+  }, // 废岩星
   {
     id: 3,
     image:
       "https://i0.hdslb.com/bfs/article/236623c6a6f527f620aa05fca381ae581402305269.png@1e_1c.webp",
     outline:
       "https://i0.hdslb.com/bfs/article/10d5133031b805e5b4aae44d3f58e8fb1402305269.png@1e_1c.webp",
-    orbitDuration: 30,
     src: "/3.mp3",
     volume: 0.5,
     buffer: null,
     sourceNode: null,
-  },
+  }, // 碎空星
   {
     id: 4,
     image:
       "https://i0.hdslb.com/bfs/article/0d0f8a1d1a599ac635d72c1a4d0ec5181402305269.png@1e_1c.webp",
     outline:
       "https://i0.hdslb.com/bfs/article/e4b078c28deb0120be29be9f024070a71402305269.png@1e_1c.webp",
-    orbitDuration: 10000000,
     src: "/4.mp3",
     volume: 0.4,
     buffer: null,
     sourceNode: null,
-  },
+  }, // 外星站
   {
     id: 5,
     image:
       "https://i0.hdslb.com/bfs/article/6fc016f64c490e3a3c478fb5e32b2cdf1402305269.png@1e_1c.webp",
     outline:
       "https://i0.hdslb.com/bfs/article/f8511547e065b28aef4e4c19b3bd36681402305269.png@1e_1c.webp",
-    orbitDuration: 45,
     src: "/5.mp3",
     volume: 0.7,
     buffer: null,
     sourceNode: null,
-  },
+  }, // 量子卫星
   {
     id: 6,
     image:
       "https://i0.hdslb.com/bfs/article/1904c9a5e5f2d0fc7d60b49bb1b73d9d1402305269.png@1e_1c.webp",
     outline:
       "https://i0.hdslb.com/bfs/article/969599e2d5c70e1568fd7e6068c5d2e71402305269.png@1e_1c.webp",
-    orbitDuration: 55,
     src: "/6.mp3",
     volume: 0.9,
     buffer: null,
     sourceNode: null,
-  },
+  }, // 深巨星
   {
     id: 7,
     image:
       "https://i0.hdslb.com/bfs/article/fb3e5d5b42bbd74cf01da36a91d3f3e71402305269.png@1e_1c.webp",
     outline:
       "https://i0.hdslb.com/bfs/article/85340e698712cfaf3ccb620dd4f39d1c1402305269.png@1e_1c.webp",
-    orbitDuration: 70,
     src: "/7.mp3",
     volume: 0.55,
     buffer: null,
     sourceNode: null,
-  },
+  }, // 黑棘星
 ]);
 
 const startEmsemble = () => {
@@ -204,8 +195,7 @@ const playAudio = (i: number) => {
     planet.sourceNode.connect(gainNodes[i]);
     gainNodes[i].connect(audioContext.destination);
     planet.sourceNode.loop = true;
-    // changeVolume(i); // todo 最好一开始音量是逐渐升高的
-    crescendoVolume(i); // todo 最好一开始音量是逐渐升高的
+    crescendoVolume(i);
     planet.sourceNode.start(0);
   }
 };
@@ -221,7 +211,10 @@ const crescendoVolume = (i: number) => {
   const currentTime = audioContext.currentTime;
   gainNodes[i].gain.cancelScheduledValues(currentTime);
   gainNodes[i].gain.setValueAtTime(0, currentTime); // 从 0 音量与当前时间开始
-  gainNodes[i].gain.linearRampToValueAtTime(planetList.value[i].volume, currentTime + fadeDuration);
+  gainNodes[i].gain.linearRampToValueAtTime(
+    planetList.value[i].volume,
+    currentTime + fadeDuration
+  );
   localVolume[i] = Number(planetList.value[i].volume);
   localStorage.setItem("Planet", JSON.stringify(localVolume));
 };
@@ -389,23 +382,37 @@ onBeforeUnmount(() => {
 
 // 调整公转半径
 $planet-sizes: (
-  1: 150px,
-  2: 250px,
-  3: 400px,
-  4: 550px,
-  5: 700px,
-  6: 850px,
-  7: 1000px,
+  1: 150,
+  // 余烬双星
+  2: 250,
+  // 废岩星
+  3: 350,
+  // 碎空星
+  4: 450,
+  // 外星站
+  5: 550,
+  // 量子卫星
+  6: 650,
+  // 深巨星
+  7: 750,
+  // 黑棘星
 );
 
 $orbit-durations: (
-  1: 5s,
-  2: 7s,
-  3: 10s,
-  4: 12s,
-  5: 15s,
-  6: 18s,
-  7: 20s,
+  1: 15,
+  // 余烬双星
+  2: 25,
+  // 废岩星
+  3: 35,
+  // 碎空星
+  4: 100000,
+  // 外星站相对太阳静止
+  5: 45,
+  // 量子卫星
+  6: 55,
+  // 深巨星
+  7: 75,
+  // 黑棘星
 );
 
 .solar-system {
@@ -420,8 +427,8 @@ $orbit-durations: (
 }
 
 .sun {
-  width: 100px;
-  height: 100px;
+  width: 120px;
+  height: 120px;
 
   img {
     width: 100%;
@@ -432,8 +439,8 @@ $orbit-durations: (
 
 .planet {
   position: absolute;
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   transform-origin: center;
   animation: rotate 20s linear infinite;
 
@@ -446,7 +453,12 @@ $orbit-durations: (
   }
 
   .controls {
-    transform: translate(-15%, 550%);
+    width: 80px;
+    transform: translate(0, 425%);
+
+    #volume {
+      width: 100%;
+    }
   }
 
   &.paused {
@@ -470,16 +482,16 @@ $orbit-durations: (
 
 @each $id, $size in $planet-sizes {
   .planet-#{$id} {
-    animation: orbit-#{$id} map-get($orbit-durations, $id) linear infinite;
+    animation: orbit-#{$id} #{map-get($orbit-durations, $id)}s linear infinite;
   }
 
   @keyframes orbit-#{$id} {
     from {
-      transform: rotate(0deg) translateX($size) rotate(0deg);
+      transform: rotate(0deg) translateX(#{$size}px) rotate(0deg);
     }
 
     to {
-      transform: rotate(360deg) translateX($size) rotate(-360deg);
+      transform: rotate(360deg) translateX(#{$size}px) rotate(-360deg);
     }
   }
 }
