@@ -204,7 +204,7 @@ const playAudio = (i: number) => {
     planet.sourceNode.connect(gainNodes[i]);
     gainNodes[i].connect(audioContext.destination);
     planet.sourceNode.loop = true;
-    changeVolume(i);
+    changeVolume(i); // todo 最好一开始音量是逐渐升高的
     planet.sourceNode.start(0);
   }
 };
@@ -216,20 +216,23 @@ const changeVolume = (i: number) => {
 };
 
 onMounted(() => {
-  // todo 想办法去除 "[0.4,0.15,0.5,0.5,0.7,0.9,0.5]"，同时防止 NaN 导致空值赋值运算符工作
-  localVolume = JSON.parse(
-    localStorage.getItem("Planet") || "[0.4,0.15,0.5,0.5,0.7,0.9,0.5]"
-  );
+  try {
+    localVolume = JSON.parse(localStorage.getItem("Planet") || "[]");
+  } catch (error) {
+    localVolume = [];
+    console.warn("请不要手动修改您的 localStorage");
+  }
   planetList.value.forEach((planet: Planet, i: number) => {
     // 保证本地读取的音量在 0-1 之间，防止用户手动修改导致音量过大
+    // planetList.value[i].volume = Math.max(0, Math.min(1, localVolume[i])) ?? planetList.value[i].volume; // Math.min(1, undefined) => NaN
     planetList.value[i].volume =
-      Math.max(0, Math.min(1, localVolume[i])) ?? planetList.value[i].volume;
+      localVolume[i] !== undefined
+        ? Math.max(0, Math.min(1, localVolume[i]))
+        : planetList.value[i].volume;
     fetchAudio(planet, i);
   });
-});
 
-onBeforeUnmount(() => {
-  audioContext.close();
+  window.addEventListener("keydown", handleKeydown);
 });
 
 const handleKeydown = (event: KeyboardEvent) => {
@@ -267,12 +270,9 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 };
 
-onMounted(() => {
-  window.addEventListener("keydown", handleKeydown);
-});
-
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", handleKeydown);
+  audioContext.close();
 });
 </script>
 
