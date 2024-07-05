@@ -91,7 +91,7 @@ const planetList = ref<Planet[]>([
       "https://i0.hdslb.com/bfs/article/3be14c053f206c2a12880db8503eb8d61402305269.png@1e_1c.webp",
     orbitDuration: 10,
     src: "/1.mp3",
-    volume: 0.4,
+    volume: 0.35,
     buffer: null,
     sourceNode: null,
   },
@@ -103,7 +103,7 @@ const planetList = ref<Planet[]>([
       "https://i0.hdslb.com/bfs/article/9fe31d82efb736179f5336b45fc3b6591402305269.png@1e_1c.webp",
     orbitDuration: 20,
     src: "/2.mp3",
-    volume: 0.15,
+    volume: 0.1,
     buffer: null,
     sourceNode: null,
   },
@@ -127,7 +127,7 @@ const planetList = ref<Planet[]>([
       "https://i0.hdslb.com/bfs/article/e4b078c28deb0120be29be9f024070a71402305269.png@1e_1c.webp",
     orbitDuration: 10000000,
     src: "/4.mp3",
-    volume: 0.5,
+    volume: 0.4,
     buffer: null,
     sourceNode: null,
   },
@@ -163,7 +163,7 @@ const planetList = ref<Planet[]>([
       "https://i0.hdslb.com/bfs/article/85340e698712cfaf3ccb620dd4f39d1c1402305269.png@1e_1c.webp",
     orbitDuration: 70,
     src: "/7.mp3",
-    volume: 0.5,
+    volume: 0.55,
     buffer: null,
     sourceNode: null,
   },
@@ -204,13 +204,24 @@ const playAudio = (i: number) => {
     planet.sourceNode.connect(gainNodes[i]);
     gainNodes[i].connect(audioContext.destination);
     planet.sourceNode.loop = true;
-    changeVolume(i); // todo 最好一开始音量是逐渐升高的
+    // changeVolume(i); // todo 最好一开始音量是逐渐升高的
+    crescendoVolume(i); // todo 最好一开始音量是逐渐升高的
     planet.sourceNode.start(0);
   }
 };
 
 const changeVolume = (i: number) => {
   gainNodes[i].gain.value = planetList.value[i].volume;
+  localVolume[i] = Number(planetList.value[i].volume);
+  localStorage.setItem("Planet", JSON.stringify(localVolume));
+};
+
+const crescendoVolume = (i: number) => {
+  const fadeDuration = 2.7; // 渐变持续时间（秒）
+  const currentTime = audioContext.currentTime;
+  gainNodes[i].gain.cancelScheduledValues(currentTime);
+  gainNodes[i].gain.setValueAtTime(0, currentTime); // 从 0 音量与当前时间开始
+  gainNodes[i].gain.linearRampToValueAtTime(planetList.value[i].volume, currentTime + fadeDuration);
   localVolume[i] = Number(planetList.value[i].volume);
   localStorage.setItem("Planet", JSON.stringify(localVolume));
 };
