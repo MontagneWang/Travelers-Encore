@@ -479,7 +479,7 @@ $orbit-durations: (
     transform: rotate(360deg);
   }
 }
-
+// todo 先做量子卫星环绕行星公转的动画，之后量子态只需要切换绑定的环绕行星的 ID 即可
 @each $id, $size in $planet-sizes {
   .planet-#{$id} {
     animation: orbit-#{$id} #{map-get($orbit-durations, $id)}s linear infinite;
