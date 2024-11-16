@@ -68,6 +68,7 @@ const isMasked = ref(true);
 const isLoaded = ref(false);
 const hoveredPlanet = ref<null | number>(null);
 const loadingText = ref("Preparing Instruments......");
+const audioBufferedStatus = ref<number[]>(Array(7).fill(-1)); // 音频加载状态
 let localVolume: number[] = [];
 
 interface Planet {
@@ -75,6 +76,7 @@ interface Planet {
   image: string;
   outline: string;
   src: string;
+  srcOnline: string;
   volume: number; // todo 会被转换为 string，需要排查
   buffer: AudioBuffer | null;
   sourceNode: AudioBufferSourceNode | null;
@@ -88,6 +90,8 @@ const planetList = ref<Planet[]>([
     outline:
       "https://i0.hdslb.com/bfs/article/3be14c053f206c2a12880db8503eb8d61402305269.png@1e_1c.webp",
     src: "/1.mp3",
+    srcOnline:
+      "https://fs-im-kefu.7moor-fs1.com/ly/4d2c3f00-7d4c-11e5-af15-41bf63ae4ea0/1731720465519/1.mp3",
     volume: 0.35,
     buffer: null,
     sourceNode: null,
@@ -99,6 +103,8 @@ const planetList = ref<Planet[]>([
     outline:
       "https://i0.hdslb.com/bfs/article/9fe31d82efb736179f5336b45fc3b6591402305269.png@1e_1c.webp",
     src: "/2.mp3",
+    srcOnline:
+      "https://fs-im-kefu.7moor-fs1.com/ly/4d2c3f00-7d4c-11e5-af15-41bf63ae4ea0/1731720509341/2.mp3",
     volume: 0.1,
     buffer: null,
     sourceNode: null,
@@ -110,6 +116,8 @@ const planetList = ref<Planet[]>([
     outline:
       "https://i0.hdslb.com/bfs/article/10d5133031b805e5b4aae44d3f58e8fb1402305269.png@1e_1c.webp",
     src: "/3.mp3",
+    srcOnline:
+      "https://fs-im-kefu.7moor-fs1.com/ly/4d2c3f00-7d4c-11e5-af15-41bf63ae4ea0/1731720509487/3.mp3",
     volume: 0.5,
     buffer: null,
     sourceNode: null,
@@ -121,6 +129,8 @@ const planetList = ref<Planet[]>([
     outline:
       "https://i0.hdslb.com/bfs/article/e4b078c28deb0120be29be9f024070a71402305269.png@1e_1c.webp",
     src: "/4.mp3",
+    srcOnline:
+      "https://fs-im-kefu.7moor-fs1.com/ly/4d2c3f00-7d4c-11e5-af15-41bf63ae4ea0/1731720509639/4.mp3",
     volume: 0.4,
     buffer: null,
     sourceNode: null,
@@ -132,6 +142,8 @@ const planetList = ref<Planet[]>([
     outline:
       "https://i0.hdslb.com/bfs/article/f8511547e065b28aef4e4c19b3bd36681402305269.png@1e_1c.webp",
     src: "/5.mp3",
+    srcOnline:
+      "https://fs-im-kefu.7moor-fs1.com/ly/4d2c3f00-7d4c-11e5-af15-41bf63ae4ea0/1731720509774/5.mp3",
     volume: 0.7,
     buffer: null,
     sourceNode: null,
@@ -143,6 +155,8 @@ const planetList = ref<Planet[]>([
     outline:
       "https://i0.hdslb.com/bfs/article/969599e2d5c70e1568fd7e6068c5d2e71402305269.png@1e_1c.webp",
     src: "/6.mp3",
+    srcOnline:
+      "https://fs-im-kefu.7moor-fs1.com/ly/4d2c3f00-7d4c-11e5-af15-41bf63ae4ea0/1731721179091/6.mp3",
     volume: 0.9,
     buffer: null,
     sourceNode: null,
@@ -154,6 +168,8 @@ const planetList = ref<Planet[]>([
     outline:
       "https://i0.hdslb.com/bfs/article/85340e698712cfaf3ccb620dd4f39d1c1402305269.png@1e_1c.webp",
     src: "/7.mp3",
+    srcOnline:
+      "https://fs-im-kefu.7moor-fs1.com/ly/4d2c3f00-7d4c-11e5-af15-41bf63ae4ea0/1731721179356/7.mp3",
     volume: 0.55,
     buffer: null,
     sourceNode: null,
@@ -173,14 +189,51 @@ const startEmsemble = () => {
 const audioContext = new window.AudioContext();
 const gainNodes = planetList.value.map(() => audioContext.createGain());
 
-const fetchAudio = async (planet: Planet, i: number) => {
-  const response = await fetch(planet.src);
-  const arrayBuffer = await response.arrayBuffer();
-  planet.buffer = await audioContext.decodeAudioData(arrayBuffer);
+// const fetchAudio = async (planet: Planet, i: number) => {
+//   const response = await fetch(planet.src);
+//   const arrayBuffer = await response.arrayBuffer();
+//   planet.buffer = await audioContext.decodeAudioData(arrayBuffer);
 
-  if (i === planetList.value.length - 1) {
-    isLoaded.value = true;
-    loadingText.value = "Let's Play Together";
+//   if (i === planetList.value.length - 1) {
+//     isLoaded.value = true;
+//     loadingText.value = "Let's Play Together";
+//   }
+// };
+
+// 资源竞速加载
+const fetchAudio = async (planet: Planet, i: number) => {
+  const fetchResource = async (
+    url: string
+  ): Promise<{ url: string; buffer: ArrayBuffer }> => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`获取资源失败 ${url}`);
+    }
+    const buffer = await response.arrayBuffer();
+    return { url, buffer };
+  };
+
+  try {
+    const result = await Promise.race([
+      fetchResource(planet.src),
+      fetchResource(planet.srcOnline),
+    ]);
+
+    planet.buffer = await audioContext.decodeAudioData(result.buffer);
+
+    console.log(
+      `第${i + 1}星球音频竞速加载结果: ${
+        result.url.startsWith("http") ? "Online" : "Local"
+      }`
+    );
+
+    audioBufferedStatus.value[i] = 0; // 已就绪
+    if (audioBufferedStatus.value.every(v => v === 0)) {
+      isLoaded.value = true;
+      loadingText.value = "Let's Play Together";
+    }
+  } catch (error) {
+    console.error("获取资源失败:", error);
   }
 };
 
