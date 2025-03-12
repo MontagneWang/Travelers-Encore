@@ -476,7 +476,8 @@ $orbit-durations: (
   display: flex;
   justify-content: center;
   align-items: center;
-  background: url("@/assets/bg.webp") no-repeat center / cover;
+  background: url("https://i0.hdslb.com/bfs/article/a3dfab455801de0e8dc5bdd9067476391402305269.png@1e_1c.webp") no-repeat center / cover;
+  // background: url("@/assets/bg.webp") no-repeat center / cover;
 }
 
 .sun {
